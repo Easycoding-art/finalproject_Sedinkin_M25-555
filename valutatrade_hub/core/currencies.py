@@ -1,5 +1,7 @@
 from abc import ABC, abstractmethod
+
 from valutatrade_hub.core.exceptions import CurrencyNotFoundError
+
 
 class Currency(ABC):
     def __init__(self, name, code):

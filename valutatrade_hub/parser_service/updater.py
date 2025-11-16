@@ -1,8 +1,9 @@
+import logging
+from datetime import datetime
+
 from valutatrade_hub.parser_service.api_clients import CoinGeckoClient, ExchangeRateApiClient
 from valutatrade_hub.parser_service.config import ParserConfig
 from valutatrade_hub.parser_service.storage import Storage
-from datetime import datetime
-import logging
 
 logger = logging.getLogger("ValutaTrade.Parser")
 

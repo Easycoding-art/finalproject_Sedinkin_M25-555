@@ -1,9 +1,13 @@
 import os
 from dataclasses import dataclass, field
 
+from dotenv import load_dotenv
+
+
 @dataclass
 class ParserConfig:
     # Ключ загружается из переменной окружения
+    load_dotenv()
     EXCHANGERATE_API_KEY: str = os.getenv("EXCHANGERATE_API_KEY")
 
     # Эндпоинты

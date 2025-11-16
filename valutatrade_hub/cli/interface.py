@@ -1,6 +1,9 @@
 import shlex
+
 import prompt
-from valutatrade_hub.core.usecases import register, login, show_portfolio, sell, buy, get_rate, update_rates, show_rates
+
+from valutatrade_hub.core.usecases import buy, get_rate, login, register, sell, show_portfolio, show_rates, update_rates
+
 
 def print_help():
     print('Регистрация пользователя: register --username <str> --password <str>')

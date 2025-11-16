@@ -1,5 +1,6 @@
 import logging
 import time
+
 from valutatrade_hub.parser_service.config import ParserConfig
 from valutatrade_hub.parser_service.updater import RatesUpdater
 

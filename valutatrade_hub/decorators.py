@@ -1,6 +1,7 @@
 import functools
 from datetime import datetime
 
+
 def log_action(mode='INFO', verbose=False):
     def decorator(func):
         @functools.wraps(func)

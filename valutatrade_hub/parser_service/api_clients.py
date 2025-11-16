@@ -1,7 +1,10 @@
 from abc import ABC, abstractmethod
+
 import requests
+
 from valutatrade_hub.core.exceptions import ApiRequestError
 from valutatrade_hub.parser_service.config import ParserConfig
+
 
 class BaseApiClient(ABC):
     @abstractmethod

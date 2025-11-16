@@ -1,13 +1,15 @@
-from valutatrade_hub.core.utils import from_json, to_json, get_rates
-import random
 import hashlib
+import random
 from datetime import datetime
-from valutatrade_hub.core.exceptions import CurrencyNotFoundError, InsufficientFundsError
-from valutatrade_hub.core.currencies import CurrencyMaker
-from valutatrade_hub.decorators import log_action
-from valutatrade_hub.parser_service.updater import RatesUpdater
-from valutatrade_hub.parser_service.config import ParserConfig
+
 from prettytable import PrettyTable
+
+from valutatrade_hub.core.currencies import CurrencyMaker
+from valutatrade_hub.core.exceptions import CurrencyNotFoundError, InsufficientFundsError
+from valutatrade_hub.core.utils import from_json, get_rates, to_json
+from valutatrade_hub.decorators import log_action
+from valutatrade_hub.parser_service.config import ParserConfig
+from valutatrade_hub.parser_service.updater import RatesUpdater
 
 config = ParserConfig()
 
@@ -33,10 +35,10 @@ def register(username, password):
                      "registration_date": str(current_datetime)}
     data.append(new_user_info)
     to_json('data/users.json', data)
-    portfolio_info = {"user_id": current_id, "wallets": {config.BASE_CURRENCY: {"balance": 0.0}}}
+    portfolio_info = {"user_id": current_id, "wallets": {}}
     portfolios = from_json('data/portfolios.json')
     portfolios.append(portfolio_info)
-    to_json('data\portfolios.json', portfolios)
+    to_json('data/portfolios.json', portfolios)
     return current_id
 
 def login(username, password):
@@ -70,7 +72,6 @@ def show_portfolio(logged_in, logged_id, base_currency=config.BASE_CURRENCY):
         print(f'Неизвестная базовая валюта {base_currency}')
         return None
     exchange_rates, _ = get_rates(base_currency)
-    print(exchange_rates)
     result = 0.0
     for key in wallets.keys():
         wallet = wallets.get(key)
@@ -92,11 +93,10 @@ def buy(logged_id, currency, amount):
         print(f'{amount} должен быть положительным числом')
         return None
     exchange_rates, _ = get_rates(config.BASE_CURRENCY)
-    print(exchange_rates, config.BASE_CURRENCY)
     if currency not in exchange_rates.keys():
         print(f'Не удалось получить курс для {currency}→{config.BASE_CURRENCY}')
         return None
-    portfolios = from_json('data\portfolios.json')
+    portfolios = from_json('data/portfolios.json')
     portfolio_index = [i for i in range(len(portfolios)) if portfolios[i].get('user_id') == logged_id][0]
     portfolio = portfolios[portfolio_index]
     wallets = portfolio.get('wallets')
@@ -109,7 +109,7 @@ def buy(logged_id, currency, amount):
     print(f'Оценочная стоимость покупки: {cost} {config.BASE_CURRENCY}')
     portfolio['wallets'].update(wallets)
     portfolios[portfolio_index] = portfolio
-    to_json('data\portfolios.json', portfolios)
+    to_json('data/portfolios.json', portfolios)
 
 @log_action()
 def sell(logged_id, currency, amount):
@@ -117,7 +117,7 @@ def sell(logged_id, currency, amount):
         print('Сначала выполните login')
         return None
     amount = float(amount)
-    portfolios = from_json('data\portfolios.json')
+    portfolios = from_json('data/portfolios.json')
     portfolio_index = [i for i in range(len(portfolios)) if portfolios[i].get('user_id') == logged_id][0]
     portfolio = portfolios[portfolio_index]
     wallets = portfolio.get('wallets')
@@ -134,6 +134,8 @@ def sell(logged_id, currency, amount):
         return None
     exchange_rates, _ = get_rates(config.BASE_CURRENCY)
     cost = amount * exchange_rates.get(currency)
+    if wallets.get(config.BASE_CURRENCY) is None:
+        wallets.update({config.BASE_CURRENCY: {"balance": 0.0}})
     wallets[config.BASE_CURRENCY]["balance"] += cost
     wallets[currency]["balance"] -= amount
     print(f'Продажа выполнена: {amount} {currency} по курсу {exchange_rates.get(currency)} {config.BASE_CURRENCY}/{currency}')
@@ -142,13 +144,13 @@ def sell(logged_id, currency, amount):
     print(f'Оценочная выручка: {cost} {config.BASE_CURRENCY}')
     portfolio['wallets'].update(wallets)
     portfolios[portfolio_index] = portfolio
-    to_json('data\portfolios.json', portfolios)
+    to_json('data/portfolios.json', portfolios)
 
 def get_rate(curr_from, curr_to):
     cm = CurrencyMaker()
     try:
-        a = cm.get_currency(curr_from)
-        b = cm.get_currency(curr_to)
+        cm.get_currency(curr_from)
+        cm.get_currency(curr_to)
     except CurrencyNotFoundError as e:
         print(e)
         currs = ', '.join(cm.get_currency_list())
@@ -178,7 +180,7 @@ def update_rates(source):
         print(f"Update failed. Error: {e}. Check logs/parser.log for details.")
 
 def show_rates(currency, top, base):
-    base = config.BASE_CURRENCY if base == None else base
+    base = config.BASE_CURRENCY if base is None else base
     rates_data = from_json("data/rates.json")
     if (
         isinstance(rates_data, list)

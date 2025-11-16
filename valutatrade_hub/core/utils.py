@@ -1,7 +1,10 @@
 import json
 from datetime import datetime
-from valutatrade_hub.core.exceptions import ApiRequestError
+
+from valutatrade_hub.parser_service.config import ParserConfig
 from valutatrade_hub.parser_service.updater import RatesUpdater
+
+config = ParserConfig()
 
 def from_json(filepath):
     '''
@@ -36,7 +39,7 @@ def get_rates(to_currency):
         last_date = loaded.get("last_refresh")
         d1 = datetime.now()
         last_date = datetime.strptime(last_date, '%Y-%m-%dT%H:%M:%S')
-        minutes = (last_date - d1).total_seconds() / 60
+        minutes = (d1 - last_date).total_seconds() / 60
         if minutes > 5:
             global config
             updater = RatesUpdater(config)
