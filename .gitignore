@@ -4,3 +4,4 @@ poetry.lock
 poetry.toml
 .venv
 .ruff_cache/
+.env

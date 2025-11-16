@@ -21,19 +21,19 @@ def register(username, password):
     if len(password) < 4:
         print('Пароль должен быть не короче 4 символов')
         return None
-    current_id = ids.max() + 1
+    current_id = len(ids) + 1
     symbols = list('1234567890-=+*%!?><$#@;:qwertyuiopasdfghjklzxcvbnm')
     salt = ''.join(random.choices(symbols, k=random.randint(5, 20)))
-    hashed_password = hashlib.sha256(password + salt)
+    hashed_password = hashlib.sha256((password + salt).encode('utf-8')).hexdigest()
     current_datetime = datetime.now()
     new_user_info = {"user_id": current_id,
                      "username": username,
                      "hashed_password": hashed_password,
                      "salt": salt,
-                     "registration_date": current_datetime}
+                     "registration_date": str(current_datetime)}
     data.append(new_user_info)
     to_json('data/users.json', data)
-    portfolio_info = {"user_id": current_id, "wallets": {}}
+    portfolio_info = {"user_id": current_id, "wallets": {config.BASE_CURRENCY: {"balance": 0.0}}}
     portfolios = from_json('data/portfolios.json')
     portfolios.append(portfolio_info)
     to_json('data\portfolios.json', portfolios)
@@ -49,7 +49,7 @@ def login(username, password):
         print(f'Пользователь {username} не найден')
         return False
     salt, hashed_password, current_id = res[0]
-    if hashed_password != hashlib.sha256(password + salt):
+    if hashed_password != hashlib.sha256((password + salt).encode('utf-8')).hexdigest():
         print('Неверный пароль')
         return False
     return current_id
@@ -58,6 +58,8 @@ def show_portfolio(logged_in, logged_id, base_currency=config.BASE_CURRENCY):
     if not logged_in:
         print('Сначала выполните login')
         return None
+    if base_currency is None:
+        base_currency = config.BASE_CURRENCY
     portfolios = from_json('data/portfolios.json')
     portfolio = [val for val in portfolios if val.get('user_id') == logged_id][0]
     wallets = portfolio.get('wallets')
@@ -68,23 +70,29 @@ def show_portfolio(logged_in, logged_id, base_currency=config.BASE_CURRENCY):
         print(f'Неизвестная базовая валюта {base_currency}')
         return None
     exchange_rates, _ = get_rates(base_currency)
+    print(exchange_rates)
     result = 0.0
     for key in wallets.keys():
         wallet = wallets.get(key)
-        diff = wallet.get('balance') * exchange_rates.get(base_currency)
+        if key != config.BASE_CURRENCY:
+            diff = wallet.get('balance') * exchange_rates.get(key)
+        else :
+            diff = wallet.get('balance')
         result += diff
-        print(f'- {base_currency}: {wallet.get('balance')}  → {diff} {base_currency}')
+        print(f'- {key}: {wallet.get('balance')}  → {diff} {base_currency}')
     print(f'ИТОГО: {result} {base_currency}')
 
-@log_action
+@log_action()
 def buy(logged_id, currency, amount):
     if not logged_id:
         print('Сначала выполните login')
         return None
+    amount = float(amount)
     if amount < 0:
         print(f'{amount} должен быть положительным числом')
         return None
     exchange_rates, _ = get_rates(config.BASE_CURRENCY)
+    print(exchange_rates, config.BASE_CURRENCY)
     if currency not in exchange_rates.keys():
         print(f'Не удалось получить курс для {currency}→{config.BASE_CURRENCY}')
         return None
@@ -103,11 +111,12 @@ def buy(logged_id, currency, amount):
     portfolios[portfolio_index] = portfolio
     to_json('data\portfolios.json', portfolios)
 
-@log_action
+@log_action()
 def sell(logged_id, currency, amount):
     if not logged_id:
         print('Сначала выполните login')
         return None
+    amount = float(amount)
     portfolios = from_json('data\portfolios.json')
     portfolio_index = [i for i in range(len(portfolios)) if portfolios[i].get('user_id') == logged_id][0]
     portfolio = portfolios[portfolio_index]
@@ -116,6 +125,7 @@ def sell(logged_id, currency, amount):
         print(f'У вас нет кошелька {currency}. Добавьте валюту: она создаётся автоматически при первой покупке.')
         return None
     before = wallets[currency]["balance"]
+    amount = float(amount)
     try:
         if before < amount:
             raise InsufficientFundsError(currency, before, amount)
@@ -125,7 +135,7 @@ def sell(logged_id, currency, amount):
     exchange_rates, _ = get_rates(config.BASE_CURRENCY)
     cost = amount * exchange_rates.get(currency)
     wallets[config.BASE_CURRENCY]["balance"] += cost
-    wallets[currency]["balance"] -= cost
+    wallets[currency]["balance"] -= amount
     print(f'Продажа выполнена: {amount} {currency} по курсу {exchange_rates.get(currency)} {config.BASE_CURRENCY}/{currency}')
     print('Изменения в портфеле:')
     print(f'- {currency}: было {before} → стало {wallets[currency]["balance"]}')
@@ -145,13 +155,12 @@ def get_rate(curr_from, curr_to):
         print(f'Список доступных валют: {currs}')
         return None
     exchange_rates, update_dates = get_rates(curr_to)
-    exchange_rates_2, _ = get_rates(curr_from)
     if len(exchange_rates.keys()) == 0:
         print(f'Курс {curr_from}→{curr_to} недоступен. Повторите попытку позже.')
         return None
-    date = update_dates[exchange_rates.keys().index(curr_from)]
+    date = update_dates[list(exchange_rates.keys()).index(curr_from)]
     print(f'Курс {curr_from}→{curr_to}: {exchange_rates.get(curr_from)} (обновлено: {date})')
-    print(f'Обратный курс {curr_to}→{curr_from}: {exchange_rates_2.get(curr_to)}')
+    print(f'Обратный курс {curr_to}→{curr_from}: {1 / exchange_rates.get(curr_from)}')
 
 def update_rates(source):
     sources = [source] if source else None

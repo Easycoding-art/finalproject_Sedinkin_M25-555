@@ -29,23 +29,25 @@ def get_rates(to_currency):
     Если файл не найден, возвращает пустой словарь {}.
     Используйте try...except FileNotFoundError.
     '''
-    while True:
-        try:
+    try:
+        with open('data/rates.json', 'r') as file:
+            loaded = json.load(file)
+        data = loaded.get('pairs')
+        last_date = loaded.get("last_refresh")
+        d1 = datetime.now()
+        last_date = datetime.strptime(last_date, '%Y-%m-%dT%H:%M:%S')
+        minutes = (last_date - d1).total_seconds() / 60
+        if minutes > 5:
+            global config
+            updater = RatesUpdater(config)
+            updater.run_update(None)
             with open('data/rates.json', 'r') as file:
-                data = json.load(file)
-            valid_keys = [key for key in data.keys() if f'_{to_currency}' in key]
-            valid_courses = {key.replace(f'_{to_currency}', '') : data[key].get('rate') for key in valid_keys}
-            update_dates = [data[key].get('updated_at') for key in valid_keys]
-            d1 = datetime.now()
-            to_date = lambda x: datetime.strptime(x, '%Y-%m-%d %H:%M:%S')
-            minutes = lambda x: (x - d1).total_seconds() / 60
-            conditions = [minutes(to_date(date)) > 5 for date in update_dates]
-            if any(conditions):
-                global config
-                updater = RatesUpdater(config)
-                updater.run_update()
-            else:
-                break
-        except FileNotFoundError:
-            return {}, []
-    return valid_courses, update_dates
+                loaded = json.load(file)
+            data = loaded.get('pairs')
+            last_date = loaded.get("last_refresh")
+        valid_keys = [key for key in data.keys() if f'_{to_currency}' in key]
+        valid_courses = {key.replace(f'_{to_currency}', '') : data[key].get('rate') for key in valid_keys}
+        update_dates = [str(last_date)] * len(valid_keys)
+        return valid_courses, update_dates
+    except FileNotFoundError:
+        return {}, []

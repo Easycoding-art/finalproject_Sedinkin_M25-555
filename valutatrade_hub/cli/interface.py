@@ -55,8 +55,11 @@ def run():
                 elif '--currency' not in args and '--top' in args:
                     top = args[args.index('--top') + 1]
                     currency = None
+                else:
+                    currency = None
+                    top = None
                 if '--base' in args:
-                    currency = args[args.index('--base') + 1]
+                    base = args[args.index('--base') + 1]
                 else:
                     base = None
 
