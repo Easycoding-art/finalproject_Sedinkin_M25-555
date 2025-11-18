@@ -49,11 +49,11 @@ def login(username, password):
             for val in data if val.get('username') == username]
     if len(res) == 0:
         print(f'Пользователь {username} не найден')
-        return False
+        return None
     salt, hashed_password, current_id = res[0]
     if hashed_password != hashlib.sha256((password + salt).encode('utf-8')).hexdigest():
         print('Неверный пароль')
-        return False
+        return None
     return current_id
 
 def show_portfolio(logged_in, logged_id, base_currency=config.BASE_CURRENCY):

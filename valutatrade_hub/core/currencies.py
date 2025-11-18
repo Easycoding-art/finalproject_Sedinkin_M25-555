@@ -35,7 +35,12 @@ class CryptoCurrency(Currency):
 class CurrencyMaker():
     def __init__(self):
         self.__currency_dict = {'USD' : FiatCurrency('US Dollar', 'USD', 'United States'),
-                              'BTC' : CryptoCurrency('Bitcoin', 'BTC', 'SHA-256', '1.12e12')
+                              'BTC' : CryptoCurrency('Bitcoin', 'BTC', 'SHA-256', '1.12e12'),
+                              'ETH' : CryptoCurrency('Ethirium', 'ETH', 'SHA-256', '1.12e12'),
+                              'SOL' : CryptoCurrency('Solana', 'SOL', 'SHA-256', '1.12e12'),
+                              'EUR' : FiatCurrency('Euro', 'EUR', 'European Union'),
+                              'GBR' : FiatCurrency('Britain Pound', 'GBR', 'Great Britain'),
+                              'RUB' : FiatCurrency('Ruble', 'RUB', 'Russian Federation'),
                             }
     
     def get_currency(self, code: str):
